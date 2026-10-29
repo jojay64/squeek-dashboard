@@ -4,35 +4,82 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Squeek Wheel · Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js" integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM" crossorigin="anonymous" defer></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=IBM+Plex+Mono:wght@400;500&family=VT323&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0f0f13;--card:#17171f;--line:#2a2a36;--text:#eeeef3;--muted:#8a8aa0;--accent:#d4a84b;--accent2:#60a5fa;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171}
+:root{
+  --bg:#d3d3dc;--card:#f6f6f9;--line:#e1e1ea;--text:#1b1b22;--muted:#6b6b80;
+  --amber:#d18a00;--amber-soft:#f0b43a;--blue:#4a63d8;--green:#3f8f5a;--green-soft:#8fb99b;
+  --ok:#3f9b5f;--warn:#d18a00;--bad:#d9534f;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  --display:"Barlow Condensed","Arial Narrow",Impact,sans-serif;
+  --led:"VT323",ui-monospace,Consolas,monospace;
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px;min-height:100vh}
-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:24px}
-h1{font-size:22px;margin:0}
-h2{font-size:16px;margin:0 0 4px 0;font-weight:600}
-.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;color:var(--muted)}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
-.dot.ok{background:var(--ok)}
-.dot.warn{background:var(--warn)}
-.dot.bad{background:var(--bad)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
-.label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-.value{font-size:28px;margin-top:8px;font-variant-numeric:tabular-nums;word-break:break-word}
-.sub{font-size:13px;color:var(--muted);margin-top:6px}
-.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:12px}
-.bar>div{height:100%;background:var(--accent);width:0;transition:width .6s}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14px;padding:20px;min-height:100vh}
+header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+h1{font-family:var(--display);font-size:44px;line-height:.95;margin:0;text-transform:uppercase;letter-spacing:.01em}
+h1 span{color:var(--blue)}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #b9b9c8;background:var(--card);border-radius:4px;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.dot{width:9px;height:9px;background:var(--muted)}
+.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--card) radial-gradient(#dcdce5 1px,transparent 1.2px) 0 0/12px 12px;border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.label{display:flex;align-items:center;gap:10px;font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:var(--text)}
+.label::before{content:"";width:12px;height:12px;background:var(--green);flex:none}
+.value{font-family:var(--display);font-size:46px;line-height:1;margin-top:12px;font-variant-numeric:tabular-nums;word-break:break-word}
+.sub{font-size:12px;color:var(--muted);margin-top:8px;text-transform:uppercase;letter-spacing:.08em;line-height:1.5}
 .wide{grid-column:1/-1}
-.banner{display:none;margin-bottom:16px;padding:12px 16px;border-radius:10px;background:#3a1d1d;color:#fecaca;border:1px solid #7f1d1d}
+.blocks{display:grid;grid-template-columns:repeat(40,1fr);gap:3px;margin-top:14px}
+.blocks i{height:14px;background:#d9dbe3}
+.blocks i.on{background:var(--green-soft)}
+.banner{display:none;margin-bottom:14px;padding:12px 16px;border-radius:8px;background:#fde8e6;color:#8c2a24;border:1px solid #f1b9b4}
 .chart{width:100%;height:auto;margin-top:12px}
-.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
-.swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle}
-footer{margin-top:24px;font-size:12px;color:var(--muted);line-height:1.6}
-.stage{display:flex;align-items:center;gap:28px;flex-wrap:wrap;margin-bottom:16px}
-#wheelSvg{width:220px;height:220px;flex:none}
-.stage-text{flex:1;min-width:220px}
-.stage-text .value{font-size:22px}
+.chart text{font-family:var(--mono)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:8px}
+.swatch{display:inline-block;width:10px;height:10px;margin-right:6px;vertical-align:middle}
+footer{margin-top:20px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#55556a;line-height:1.8}
+.btn{display:inline-block;margin-top:14px;padding:11px 16px;background:var(--amber);color:#fff;border-radius:4px;font-size:12px;text-transform:uppercase;letter-spacing:.16em;text-decoration:none}
+.btn:hover{background:#b97a00}
+button.btn{border:0;font-family:var(--mono);cursor:pointer}
+button.btn:disabled{background:#b9b9c8;cursor:not-allowed}
+.plain{font-size:13px;line-height:1.65;color:#33333f;margin:8px 0 0}
+.steps{display:grid;gap:12px;margin-top:14px}
+.step{display:flex;gap:14px;background:#fff;border:1px solid var(--line);padding:14px}
+.step>b{flex:none;width:34px;height:34px;background:var(--blue);color:#fff;font-family:var(--led);font-size:26px;line-height:34px;text-align:center}
+.step h3{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.12em}
+.step .btn{margin-top:10px}
+.light{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:5px 10px;font-size:12px;text-transform:uppercase;letter-spacing:.12em;background:#eee;color:#444}
+.light i{width:10px;height:10px;background:#999}
+.light.green{background:#e3f3e8;color:#235c38}.light.green i{background:var(--ok)}
+.light.orange{background:#fbefd6;color:#7a5200}.light.orange i{background:var(--warn)}
+.light.red{background:#fde8e6;color:#8c2a24}.light.red i{background:var(--bad)}
+.note-ok{color:#235c38}.note-bad{color:#8c2a24}
+details.plain summary{cursor:pointer;text-transform:uppercase;letter-spacing:.12em;font-size:12px;margin-top:14px}
+details.plain code{background:#ececf3;padding:1px 4px;word-break:break-all}
+.guess{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:10px;font-size:12px;text-transform:uppercase;letter-spacing:.1em}
+.guess select{font-family:var(--mono);font-size:13px;padding:8px 10px;border:1px solid #b9b9c8;background:#fff;border-radius:4px}
+.guess .btn{margin-top:0}
+#squeakBtn{background:var(--blue);margin-right:10px}
+.olympics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
+.olympics .tile{background:#fff;border:1px solid var(--line);padding:10px 12px}
+.olympics .tile b{display:block;font-family:var(--display);font-size:34px;line-height:1;font-weight:700}
+.olympics .tile span{display:block;margin-top:6px;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+
+/* LED panel with the hamster */
+.stage{display:flex;align-items:center;gap:28px;flex-wrap:wrap;margin-bottom:14px;padding:18px 22px;border:0;border-radius:12px;
+  background:#0b0b10 radial-gradient(#262632 1.3px,transparent 1.6px) 0 0/9px 9px;color:#f6efb4}
+.stage .label{color:#9a9ab5}
+.stage .label::before{background:var(--amber-soft)}
+#wheelSvg{width:230px;height:230px;flex:none}
+.stage-text{flex:1;min-width:240px}
+.badge{display:inline-block;padding:4px 14px;background:var(--blue);color:#fff;font-family:var(--led);font-size:40px;line-height:1;letter-spacing:.06em;text-transform:uppercase}
+.stage .value{font-family:var(--led);font-size:54px;line-height:1;color:var(--amber-soft);text-transform:uppercase;letter-spacing:.03em;margin-top:10px}
+.stage .sub{color:#9a9ab5}
+.stage .sub.big{font-family:var(--led);font-size:26px;color:#f6efb4;letter-spacing:.06em}
+.stage a.btn{margin-top:12px}
 .spin{transform-origin:110px 110px;animation:spin var(--spin,2s) linear infinite;animation-play-state:paused}
 .leg{animation:step var(--step,.4s) ease-in-out infinite alternate;animation-play-state:paused}
 .leg.b{animation-direction:alternate-reverse}
@@ -45,37 +92,38 @@ footer{margin-top:24px;font-size:12px;color:var(--muted);line-height:1.6}
 @keyframes bob{from{transform:translateY(0)}to{transform:translateY(-3px)}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @media (prefers-reduced-motion:reduce){.spin,.leg,.hamster,.zzz{animation:none!important}}
+@media (max-width:520px){h1{font-size:36px}.value{font-size:40px}.stage .value{font-size:44px}}
 </style>
 </head>
 <body>
 <header>
   <div>
-    <h1>Squeek Wheel</h1>
-    <div class="sub">Public data · Sepolia (testnet)</div>
+    <h1>Squeek Wheel <span>Dashboard</span></h1>
+    <div class="sub">Public data · Sepolia (testnet) · unofficial</div>
   </div>
   <div class="pill"><span class="dot" id="dot"></span><span id="state">Loading…</span></div>
 </header>
 
 <div class="banner" id="banner"></div>
 
-<div class="card stage sleeping" id="stage">
+<div class="stage sleeping" id="stage">
   <svg id="wheelSvg" viewBox="0 0 220 220" role="img" aria-label="A hamster running in a wheel">
+    <defs>
+      <radialGradient id="fur" cx="45%" cy="35%" r="75%"><stop offset="0" stop-color="#f8d29c"/><stop offset="1" stop-color="#d28a45"/></radialGradient>
+      <radialGradient id="belly" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#fff6e6"/><stop offset="1" stop-color="#f1d3a6"/></radialGradient>
+    </defs>
     <g class="spin">
-      <circle cx="110" cy="110" r="95" fill="none" stroke="#d4a84b" stroke-width="5"/>
+      <circle cx="110" cy="110" r="95" fill="none" stroke="#f0b43a" stroke-width="5"/>
       <circle cx="110" cy="110" r="84" fill="none" stroke="#2a2a36" stroke-width="2"/>
       <g stroke="#8a8aa0" stroke-width="2">
         <line x1="110" y1="26" x2="110" y2="194"/><line x1="26" y1="110" x2="194" y2="110"/>
         <line x1="50.6" y1="50.6" x2="169.4" y2="169.4"/><line x1="169.4" y1="50.6" x2="50.6" y2="169.4"/>
       </g>
-      <circle cx="110" cy="110" r="7" fill="#d4a84b"/>
-      <circle cx="110" cy="15" r="6" fill="#60a5fa"/>
+      <circle cx="110" cy="110" r="7" fill="#f0b43a"/>
+      <rect x="104" y="9" width="12" height="12" fill="#4a63d8"/>
     </g>
-    <defs>
-      <radialGradient id="fur" cx="45%" cy="35%" r="75%"><stop offset="0" stop-color="#f8d29c"/><stop offset="1" stop-color="#d28a45"/></radialGradient>
-      <radialGradient id="belly" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#fff6e6"/><stop offset="1" stop-color="#f1d3a6"/></radialGradient>
-    </defs>
     <g class="hamster">
-      <ellipse cx="112" cy="194" rx="34" ry="3.5" fill="#000" opacity=".25"/>
+      <ellipse cx="112" cy="194" rx="34" ry="3.5" fill="#000" opacity=".35"/>
       <circle cx="80" cy="165" r="4.5" fill="#d28a45"/>
       <g class="leg b" style="transform-origin:86px 176px"><line x1="86" y1="176" x2="86" y2="189" stroke="#b97a42" stroke-width="7" stroke-linecap="round"/><ellipse cx="88" cy="191.5" rx="6" ry="3" fill="#e6c49a"/></g>
       <g class="leg" style="transform-origin:134px 176px"><line x1="134" y1="176" x2="134" y2="189" stroke="#b97a42" stroke-width="7" stroke-linecap="round"/><ellipse cx="136" cy="191.5" rx="6" ry="3" fill="#e6c49a"/></g>
@@ -96,15 +144,37 @@ footer{margin-top:24px;font-size:12px;color:var(--muted);line-height:1.6}
         <line x1="157" y1="165" x2="173" y2="160"/><line x1="157" y1="166" x2="174" y2="166"/><line x1="156" y1="167" x2="172" y2="172"/>
       </g>
     </g>
-    <g class="zzz" fill="#60a5fa" font-size="14" font-weight="700"><text x="148" y="136">z</text><text x="158" y="124" font-size="18">Z</text></g>
+    <g class="zzz" fill="#8fa2ff" font-family="VT323, monospace" font-size="26"><text x="148" y="136">z</text><text x="160" y="120" font-size="34">Z</text></g>
   </svg>
   <div class="stage-text">
     <div class="label">Hamster status</div>
-    <div class="value" id="hamsterLine">Napping…</div>
-    <div class="sub" id="hamsterSub">Waiting for data.</div>
+    <div style="margin-top:12px"><span class="badge" id="badge">Off air</span></div>
+    <div class="value" id="hamsterLine">The hamster is sleeping</div>
+    <div class="sub big" id="hamsterSub">Waiting for data.</div>
     <div class="sub" id="lifetime"></div>
-    <div class="sub"><a href="https://x.com/i/broadcasts/1qKVmyjXjZWxB" target="_blank" rel="noopener" style="color:var(--accent2)">Watch the real hamster on X →</a></div>
+    <a class="btn" href="https://x.com/i/broadcasts/1qKVmyjXjZWxB" target="_blank" rel="noopener">Watch the real hamster on X →</a>
   </div>
+</div>
+
+<div class="card wide" style="margin-bottom:14px">
+  <div class="label">Hamster forecast</div>
+  <div class="value" id="fcHead" style="font-size:32px">—</div>
+  <div class="sub" id="fcText">Loading…</div>
+  <svg class="chart" id="fcStrip" viewBox="0 0 640 56" role="img" aria-label="Typical awake hours over 24 hours, UTC"></svg>
+  <div class="legend">
+    <span><span class="swatch" style="background:#f0a500"></span>Usually running</span>
+    <span><span class="swatch" style="background:#d9dbe3"></span>Usually asleep</span>
+    <span><span class="swatch" style="background:#4a63d8"></span>Now (UTC)</span>
+  </div>
+  <div class="sub" style="margin-top:16px">Your guess (UTC) · saved only in this browser</div>
+  <div class="guess">
+    <label>Wakes up <select id="gWake"></select></label>
+    <label>Falls asleep <select id="gSleep"></select></label>
+    <button class="btn" id="gSave" type="button">Lock my guess</button>
+  </div>
+  <div class="sub" id="gResult"></div>
+  <button class="btn" id="squeakBtn" type="button">Squeak!</button>
+  <span class="sub" id="squeakCount"></span>
 </div>
 
 <div class="grid">
@@ -121,7 +191,7 @@ footer{margin-top:24px;font-size:12px;color:var(--muted);line-height:1.6}
   <div class="card wide">
     <div class="label">Settled Squeek block</div>
     <div class="value" id="height">—</div>
-    <div class="bar"><div id="progress"></div></div>
+    <div class="blocks" id="progress" aria-hidden="true"></div>
     <div class="sub" id="progressText">—</div>
   </div>
   <div class="card">
@@ -141,33 +211,76 @@ footer{margin-top:24px;font-size:12px;color:var(--muted);line-height:1.6}
   </div>
 </div>
 
-<div class="grid" style="margin-top:16px">
+<div class="grid" style="margin-top:14px">
+  <div class="card wide" id="cp">
+    <div class="label">Checkpoint · try the real contract (testnet)</div>
+    <p class="plain">The hamster's work is recorded on Ethereum, but the reward (SQK tokens) is only created when someone presses a button called a <b>checkpoint</b>. Anyone is allowed to press it, no special permission needed. This page walks you through it in 4 small steps. It only works on <b>Sepolia</b>, a practice network where nothing has real value.</p>
+    <div class="steps">
+      <div class="step"><b>1</b><div>
+        <h3>Is it ready?</h3>
+        <div class="light" id="cpLight"><i></i><span>Checking…</span></div>
+        <p class="plain" id="cpExplain">Reading the contract…</p>
+        <p class="plain" id="cpRaw" style="color:var(--muted);font-size:12px"></p>
+      </div></div>
+      <div class="step"><b>2</b><div>
+        <h3>Connect your wallet</h3>
+        <p class="plain">You need a wallet such as <a href="https://metamask.io" target="_blank" rel="noopener">MetaMask</a>, set to the <b>Sepolia</b> test network, with a tiny bit of free Sepolia test ETH to pay the network fee (called "gas"). Connecting only shows this page your public address. It cannot move your funds.</p>
+        <button class="btn" id="cpConnect" type="button">Connect wallet</button>
+        <p class="plain" id="cpWallet"></p>
+      </div></div>
+      <div class="step"><b>3</b><div>
+        <h3>Test it first (free)</h3>
+        <p class="plain">This asks the contract "would this work?" without sending anything. It costs nothing and changes nothing.</p>
+        <button class="btn" id="cpSim" type="button" disabled>Run the free test</button>
+        <p class="plain" id="cpSimOut"></p>
+      </div></div>
+      <div class="step"><b>4</b><div>
+        <h3>Send it</h3>
+        <p class="plain">Only when the light is green and the test passed. Your wallet will open and show the details: read them, then confirm or cancel. Please send it once per green light; repeating transactions does not give you anything extra.</p>
+        <button class="btn" id="cpSend" type="button" disabled>Send checkpoint()</button>
+        <p class="plain" id="cpTx"></p>
+      </div></div>
+    </div>
+    <details class="plain">
+      <summary>Safety and details</summary>
+      <p>This is a community page, not run by the Squeekchain team. It talks only to the contract <code>0x3beE588fC20dE788Bac17d33b41Da7346cb27EC4</code> (SqueekMining, Sepolia), copied from the <a href="https://docs.squeekchain.com/assets/deployments/sepolia.json" target="_blank" rel="noopener">official deployment record</a>. Check that it matches before you sign.</p>
+      <p>The page never asks for your seed phrase or private key and never will. Your wallet does the signing. If a wallet window ever asks for something that does not match "checkpoint", cancel.</p>
+      <p>The only function used is <code>checkpoint()</code>, with no input. If something fails, the page shows the reason and stops. It does not retry by itself.</p>
+    </details>
+  </div>
   <div class="card wide">
-    <h2>Activity over the last 7 days</h2>
+    <div class="label">Hamster Olympics</div>
+    <div class="sub">What the hamster's lifetime distance looks like (approximate comparisons)</div>
+    <div class="olympics" id="olympics"><div class="sub">Loading…</div></div>
+    <button class="btn" id="alertBtn" type="button">Alert me when the hamster wakes up</button>
+    <div class="sub" id="alertNote">Browser notification, only while this page stays open.</div>
+  </div>
+  <div class="card wide">
+    <div class="label">Activity over the last 7 days</div>
     <div class="sub">Observed work per day (UTC day, 12:00 to 12:00 UTC)</div>
     <svg class="chart" id="dailyChart" viewBox="0 0 640 240" role="img" aria-label="Observed work per day"></svg>
     <div class="legend">
-      <span><span class="swatch" style="background:var(--accent)"></span>Observed work</span>
-      <span><span class="swatch" style="background:var(--line)"></span>Partial day (incomplete coverage)</span>
+      <span><span class="swatch" style="background:#f0a500"></span>Observed work</span>
+      <span><span class="swatch" style="background:#cfcfda"></span>Partial day (incomplete coverage)</span>
     </div>
   </div>
   <div class="card wide">
-    <h2>Typical day profile</h2>
+    <div class="label">Typical day profile</div>
     <div class="sub">Average work per 30-minute slot, UTC, over the 7-day window</div>
     <svg class="chart" id="dayChart" viewBox="0 0 640 240" role="img" aria-label="Typical day profile"></svg>
     <div class="legend">
-      <span><span class="swatch" style="background:var(--accent2)"></span>Total work per slot</span>
+      <span><span class="swatch" style="background:#4a63d8"></span>Total work per slot</span>
     </div>
   </div>
   <div class="card wide">
-    <div class="sub" id="statsNote">Loading statistics…</div>
+    <div class="sub" id="statsNote" style="margin-top:0">Loading statistics…</div>
   </div>
 </div>
 
 <footer>
   Updated every 15 s (status) and 60 s (activity) · <span id="updated">—</span><br>
   "Unknown" means the data is not available; it is not a zero value.<br>
-  Sources: api.squeekchain.com/v1/status and /v1/measurement/stats?range=7d
+  Sources: api.squeekchain.com/v1/status and /v1/measurement/stats?range=7d · Community dashboard, not affiliated with the protocol.
 </footer>
 
 <script>
@@ -176,6 +289,7 @@ const STATS_API = "https://api.squeekchain.com/v1/measurement/stats?range=7d";
 const POLL_MS = 15000;
 const STATS_POLL_MS = 60000;
 const NS = "http://www.w3.org/2000/svg";
+const BLOCK_CELLS = 40;
 
 const $ = (id) => document.getElementById(id);
 const UNKNOWN = "unknown";
@@ -204,20 +318,63 @@ function kmh(mmPerSecond) {
 }
 function setDot(kind) { $("dot").className = "dot " + kind; }
 
+// Pixel-block progress bar (like the protocol's block grids).
+const cells = [];
+for (let i = 0; i < BLOCK_CELLS; i++) {
+  const c = document.createElement("i");
+  $("progress").appendChild(c);
+  cells.push(c);
+}
+function setProgress(pct) {
+  const filled = Math.round((pct / 100) * BLOCK_CELLS);
+  cells.forEach((c, i) => c.classList.toggle("on", i < filled));
+}
+
+// Opt-in browser notification when the hamster goes from asleep to running.
+let wasRunning = null;
+let alertOn = false;
+$("alertBtn").addEventListener("click", async () => {
+  if (!("Notification" in window)) {
+    $("alertNote").textContent = "Notifications are not supported in this browser.";
+    return;
+  }
+  if (alertOn) {
+    alertOn = false;
+    $("alertBtn").textContent = "Alert me when the hamster wakes up";
+    $("alertNote").textContent = "Alert off.";
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm === "granted") {
+    alertOn = true;
+    $("alertBtn").textContent = "Alert on · click to turn off";
+    $("alertNote").textContent = "You will be notified when the wheel starts spinning (page must stay open).";
+  } else {
+    $("alertNote").textContent = "Notifications are blocked for this page.";
+  }
+});
+function notifyWake(rpm) {
+  if (!alertOn || Notification.permission !== "granted") return;
+  new Notification("The hamster is running!", { body: rpm.toFixed(1) + " rpm on the Squeek wheel." });
+}
+
 function setHamster(running, rpm) {
+  if (wasRunning === false && running) notifyWake(rpm);
+  wasRunning = running;
   const stage = $("stage");
   stage.classList.toggle("running", running);
   stage.classList.toggle("sleeping", !running);
+  $("badge").textContent = running ? "Live" : "Off air";
   if (running) {
     // Real wheel period is 60/rpm seconds; clamp so it stays readable on screen.
     const period = Math.min(8, Math.max(0.6, 60 / Math.max(rpm, 0.1)));
     stage.style.setProperty("--spin", period.toFixed(2) + "s");
     stage.style.setProperty("--step", Math.min(0.5, Math.max(0.15, period / 5)).toFixed(2) + "s");
-    $("hamsterLine").textContent = "Running!";
-    $("hamsterSub").textContent = rpm.toFixed(1) + " rpm — powering the chain, one lap at a time.";
+    $("hamsterLine").textContent = "The hamster is running!";
+    $("hamsterSub").textContent = rpm.toFixed(1) + " rpm · powering the chain";
   } else {
-    $("hamsterLine").textContent = "Napping…";
-    $("hamsterSub").textContent = "The wheel is still. Blocks wait for the next sprint.";
+    $("hamsterLine").textContent = "The hamster is sleeping";
+    $("hamsterSub").textContent = "The wheel is still · blocks wait for the next sprint";
   }
 }
 
@@ -263,11 +420,11 @@ function renderBuilder(d) {
   if (a) {
     $("height").textContent = fmtBig(a.blockHeight);
     const p = pctOfBlock(a.blockProgress);
-    $("progress").style.width = p.toFixed(1) + "%";
+    setProgress(p);
     $("progressText").textContent = p.toFixed(1) + " % to the next block";
   } else {
     $("height").textContent = UNKNOWN;
-    $("progress").style.width = "0%";
+    setProgress(0);
     $("progressText").textContent = b && b.reason ? b.reason : "";
   }
 
@@ -327,6 +484,8 @@ async function load() {
 
 /* ---------- Activity charts ---------- */
 
+const AXIS = "#b6b6c6", TEXT = "#6b6b80", BAR = "#f0a500", BAR_PARTIAL = "#cfcfda", LINE = "#4a63d8";
+
 function svgEl(tag, attrs, text) {
   const el = document.createElementNS(NS, tag);
   for (const [k, v] of Object.entries(attrs || {})) el.setAttribute(k, String(v));
@@ -347,9 +506,9 @@ function drawDaily(svg, days) {
   const slot = innerW / Math.max(1, days.length);
   const barW = slot * 0.6;
 
-  svg.appendChild(svgEl("line", { x1: padL, y1: H - padB, x2: W - padR, y2: H - padB, stroke: "#2a2a36" }));
-  svg.appendChild(svgEl("text", { x: padL - 8, y: padT + 4, fill: "#8a8aa0", "font-size": 11, "text-anchor": "end" }, fmtBig(String(Math.round(max)))));
-  svg.appendChild(svgEl("text", { x: padL - 8, y: H - padB, fill: "#8a8aa0", "font-size": 11, "text-anchor": "end" }, "0"));
+  svg.appendChild(svgEl("line", { x1: padL, y1: H - padB, x2: W - padR, y2: H - padB, stroke: AXIS }));
+  svg.appendChild(svgEl("text", { x: padL - 8, y: padT + 4, fill: TEXT, "font-size": 11, "text-anchor": "end" }, fmtBig(String(Math.round(max)))));
+  svg.appendChild(svgEl("text", { x: padL - 8, y: H - padB, fill: TEXT, "font-size": 11, "text-anchor": "end" }, "0"));
 
   days.forEach((d, i) => {
     const v = values[i];
@@ -358,11 +517,11 @@ function drawDaily(svg, days) {
     const y = H - padB - h;
     const partial = d.coverage && d.coverage.coverageBps < 10000;
     svg.appendChild(svgEl("rect", {
-      x, y, width: barW, height: Math.max(h, 1), rx: 3,
-      fill: partial ? "#2a2a36" : "#d4a84b"
+      x, y, width: barW, height: Math.max(h, 1),
+      fill: partial ? BAR_PARTIAL : BAR
     }));
-    svg.appendChild(svgEl("text", { x: x + barW / 2, y, dy: -4, fill: "#eeeef3", "font-size": 11, "text-anchor": "middle" }, fmtBig(String(v))));
-    svg.appendChild(svgEl("text", { x: x + barW / 2, y: H - padB + 16, fill: "#8a8aa0", "font-size": 11, "text-anchor": "middle" }, (d.date || "").slice(5)));
+    svg.appendChild(svgEl("text", { x: x + barW / 2, y, dy: -4, fill: "#1b1b22", "font-size": 11, "text-anchor": "middle" }, fmtBig(String(v))));
+    svg.appendChild(svgEl("text", { x: x + barW / 2, y: H - padB + 16, fill: TEXT, "font-size": 11, "text-anchor": "middle" }, (d.date || "").slice(5)));
   });
 }
 
@@ -379,23 +538,137 @@ function drawTypicalDay(svg, slots) {
     return [x, y];
   });
 
-  svg.appendChild(svgEl("line", { x1: padL, y1: H - padB, x2: W - padR, y2: H - padB, stroke: "#2a2a36" }));
-  svg.appendChild(svgEl("text", { x: padL - 8, y: padT + 4, fill: "#8a8aa0", "font-size": 11, "text-anchor": "end" }, fmtBig(String(Math.round(max)))));
-  svg.appendChild(svgEl("text", { x: padL - 8, y: H - padB, fill: "#8a8aa0", "font-size": 11, "text-anchor": "end" }, "0"));
+  svg.appendChild(svgEl("line", { x1: padL, y1: H - padB, x2: W - padR, y2: H - padB, stroke: AXIS }));
+  svg.appendChild(svgEl("text", { x: padL - 8, y: padT + 4, fill: TEXT, "font-size": 11, "text-anchor": "end" }, fmtBig(String(Math.round(max)))));
+  svg.appendChild(svgEl("text", { x: padL - 8, y: H - padB, fill: TEXT, "font-size": 11, "text-anchor": "end" }, "0"));
 
   if (pts.length > 1) {
     const d = pts.map(([x, y], i) => (i === 0 ? "M" : "L") + x.toFixed(1) + " " + y.toFixed(1)).join(" ");
     const area = d + ` L${pts[pts.length - 1][0].toFixed(1)} ${H - padB} L${pts[0][0].toFixed(1)} ${H - padB} Z`;
-    svg.appendChild(svgEl("path", { d: area, fill: "rgba(96,165,250,0.15)" }));
-    svg.appendChild(svgEl("path", { d, fill: "none", stroke: "#60a5fa", "stroke-width": 2 }));
+    svg.appendChild(svgEl("path", { d: area, fill: "rgba(74,99,216,0.15)" }));
+    svg.appendChild(svgEl("path", { d, fill: "none", stroke: LINE, "stroke-width": 2, "stroke-linejoin": "miter" }));
   }
 
   [0, 6, 12, 18, 24].forEach((h) => {
     const x = padL + ((h * 60) / (47 * 30)) * innerW;
     const xx = h === 24 ? W - padR : x;
-    svg.appendChild(svgEl("text", { x: xx, y: H - padB + 16, fill: "#8a8aa0", "font-size": 11, "text-anchor": h === 0 ? "start" : h === 24 ? "end" : "middle" }, h + " h UTC"));
+    svg.appendChild(svgEl("text", { x: xx, y: H - padB + 16, fill: TEXT, "font-size": 11, "text-anchor": h === 0 ? "start" : h === 24 ? "end" : "middle" }, h + " h UTC"));
   });
 }
+
+/* ---------- Forecast, guess and squeak ---------- */
+
+const SLOTS = 48;
+let forecast = null; // { wake, sleep, active[] } in minutes UTC
+
+const hhmm = (min) => {
+  const m = ((min % 1440) + 1440) % 1440;
+  return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+};
+const gap = (a, b) => { const d = Math.abs(a - b) % 1440; return Math.min(d, 1440 - d); };
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+const nowMinUtc = () => { const n = new Date(); return n.getUTCHours() * 60 + n.getUTCMinutes(); };
+
+function computeForecast(slots) {
+  const act = new Array(SLOTS).fill(false);
+  slots.forEach((s) => {
+    const i = Math.round(Number(s.startMinuteUtc) / 30);
+    if (i >= 0 && i < SLOTS && Number(s.totalWorkUnits) > 0) act[i] = true;
+  });
+  if (!act.some(Boolean) || act.every(Boolean)) return null;
+  // Merge short pauses (up to 1 hour) so a quick break does not split a session.
+  const f = act.slice();
+  for (let i = 0; i < SLOTS; i++) {
+    if (act[i]) continue;
+    let back = 1, fwd = 1;
+    while (back <= 3 && !act[(i - back + SLOTS) % SLOTS]) back++;
+    while (fwd <= 3 && !act[(i + fwd) % SLOTS]) fwd++;
+    if (back <= 3 && fwd <= 3 && back + fwd - 1 <= 2) f[i] = true;
+  }
+  let best = null;
+  for (let i = 0; i < SLOTS; i++) {
+    if (!f[i] || f[(i - 1 + SLOTS) % SLOTS]) continue;
+    let len = 0;
+    while (f[(i + len) % SLOTS] && len < SLOTS) len++;
+    if (!best || len > best.len) best = { start: i, len };
+  }
+  if (!best) return null;
+  return { wake: best.start * 30, sleep: ((best.start + best.len) % SLOTS) * 30, active: f };
+}
+
+function renderForecast() {
+  const svg = $("fcStrip");
+  if (!forecast) {
+    $("fcHead").textContent = "Not enough data";
+    $("fcText").textContent = "The hamster has not shown a clear daily rhythm yet.";
+    return;
+  }
+  const { wake, sleep, active } = forecast;
+  const now = nowMinUtc();
+  const asleepNow = !active[Math.floor(now / 30) % SLOTS];
+  const until = (target) => { const d = (target - now + 1440) % 1440; return Math.floor(d / 60) + "h " + String(d % 60).padStart(2, "0") + "m"; };
+  $("fcHead").textContent = asleepNow ? "Wakes up around " + hhmm(wake) + " UTC" : "Sleeps around " + hhmm(sleep) + " UTC";
+  $("fcText").textContent = (asleepNow ? "Typically in " + until(wake) : "Typically in " + until(sleep)) +
+    " · usual routine: up " + hhmm(wake) + ", asleep " + hhmm(sleep) + " UTC (based on the observed days, not a promise).";
+
+  clearSvg(svg);
+  const cw = 640 / SLOTS;
+  active.forEach((on, i) => svg.appendChild(svgEl("rect", { x: i * cw + 0.5, y: 6, width: cw - 1, height: 24, fill: on ? BAR : "#d9dbe3" })));
+  [0, 6, 12, 18, 24].forEach((h) => svg.appendChild(svgEl("text", { x: Math.min(636, Math.max(4, h * 60 / 1440 * 640)), y: 50, fill: TEXT, "font-size": 11, "text-anchor": h === 0 ? "start" : h === 24 ? "end" : "middle" }, h + "h")));
+  const x = (now / 1440) * 640;
+  svg.appendChild(svgEl("rect", { x: x - 1.5, y: 0, width: 3, height: 36, fill: LINE }));
+  renderGuess();
+}
+
+function renderGuess() {
+  const saved = lsGet("hamsterGuess");
+  if (!saved || !forecast) { $("gResult").textContent = saved ? "" : "Pick two times and lock your guess to compare it with the hamster's routine."; return; }
+  const [w, s] = saved.split(",").map(Number);
+  const dw = gap(w, forecast.wake), ds = gap(s, forecast.sleep);
+  const fmt = (d) => (d === 0 ? "spot on" : Math.floor(d / 60) + "h " + String(d % 60).padStart(2, "0") + "m off");
+  $("gResult").textContent = `Your guess: up ${hhmm(w)}, asleep ${hhmm(s)} UTC → wake-up ${fmt(dw)}, bedtime ${fmt(ds)}.`;
+}
+
+(function initGuess() {
+  for (const id of ["gWake", "gSleep"]) {
+    const sel = $(id);
+    for (let m = 0; m < 1440; m += 30) sel.appendChild(new Option(hhmm(m), String(m)));
+  }
+  const saved = lsGet("hamsterGuess");
+  if (saved) { const [w, s] = saved.split(","); $("gWake").value = w; $("gSleep").value = s; }
+  else { $("gWake").value = "1260"; $("gSleep").value = "420"; }
+  $("gSave").addEventListener("click", () => {
+    lsSet("hamsterGuess", $("gWake").value + "," + $("gSleep").value);
+    renderGuess();
+  });
+
+  let audio = null;
+  let count = Number(lsGet("squeakCount")) || 0;
+  const showCount = () => { $("squeakCount").textContent = count ? "Squeaks given: " + count : ""; };
+  showCount();
+  $("squeakBtn").addEventListener("click", () => {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      const t = audio.currentTime;
+      [0, 0.16].forEach((off, k) => {
+        const o = audio.createOscillator(), g = audio.createGain();
+        o.type = "triangle";
+        o.frequency.setValueAtTime(1700 + k * 300, t + off);
+        o.frequency.exponentialRampToValueAtTime(3200 + k * 300, t + off + 0.09);
+        g.gain.setValueAtTime(0.0001, t + off);
+        g.gain.exponentialRampToValueAtTime(0.25, t + off + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + off + 0.11);
+        o.connect(g).connect(audio.destination);
+        o.start(t + off); o.stop(t + off + 0.12);
+      });
+    } catch {}
+    count++; lsSet("squeakCount", String(count)); showCount();
+    const svg = $("wheelSvg");
+    svg.animate([{ transform: "scale(1)" }, { transform: "scale(1.06)" }, { transform: "scale(1)" }], { duration: 250 });
+  });
+  setInterval(renderForecast, 30000);
+})();
 
 async function loadStats() {
   const note = $("statsNote");
@@ -418,13 +691,173 @@ async function loadStats() {
       const km = Number(life.observedDistanceMm) / 1e6;
       $("lifetime").textContent = `Lifetime: ${km.toFixed(2)} km run (${(km / 42.195).toFixed(2)} marathons) · ${fmtBig(life.settledBlockCount)} blocks settled`;
     }
-    if (Array.isArray(activity.typicalDay)) drawTypicalDay($("dayChart"), activity.typicalDay);
+    if (life && Number.isFinite(Number(life.observedDistanceMm))) {
+      const km = Number(life.observedDistanceMm) / 1e6;
+      const tiles = [
+        [(km / 42.195).toFixed(2), "Marathons"],
+        [fmtBig(String(Math.round(km * 1000 / 400))), "Laps of a 400 m track"],
+        [fmtBig(String(Math.round(km * 1000 / 330))), "Eiffel Towers, stacked"],
+        [((km / 465) * 100).toFixed(1) + " %", "of Paris → Lyon"],
+        [(km / 9).toFixed(1), "Wild-hamster nights (~9 km)"]
+      ];
+      $("olympics").innerHTML = tiles.map(([v, l]) => `<div class="tile"><b>${v}</b><span>${l}</span></div>`).join("");
+    }
+    if (Array.isArray(activity.typicalDay)) {
+      drawTypicalDay($("dayChart"), activity.typicalDay);
+      forecast = computeForecast(activity.typicalDay);
+      renderForecast();
+    }
     const cov = activity.coverage ? (activity.coverage.coverageBps / 100).toFixed(1) + " % of rounds observed" : "";
     note.textContent = `Window coverage: ${cov}. Grey bars are incomplete days.`;
   } catch (err) {
     note.textContent = "Statistics unavailable (" + err.message + ").";
   }
 }
+
+/* ---------- Checkpoint helper (SqueekMining on Sepolia) ---------- */
+
+const CP = {
+  chainId: 11155111,
+  chainHex: "0xaa36a7",
+  // Copied from https://docs.squeekchain.com/assets/deployments/sepolia.json
+  address: "0x3beE588fC20dE788Bac17d33b41Da7346cb27EC4",
+  rpc: "https://ethereum-sepolia-rpc.publicnode.com",
+  abi: [
+    "function checkpoint()",
+    "function checkpointStatus() view returns (bool corePaused, uint64 nextRound, bool roundSettled)"
+  ]
+};
+const cp = { status: null, signer: null, account: null, simOk: false, busy: false };
+
+function cpSetLight(kind, text) {
+  $("cpLight").className = "light " + kind;
+  $("cpLight").lastElementChild.textContent = text;
+}
+function cpUpdateButtons() {
+  const ready = cp.status && cp.status.ready;
+  $("cpSim").disabled = !(cp.signer && ready) || cp.busy;
+  $("cpSend").disabled = !(cp.signer && ready && cp.simOk) || cp.busy;
+}
+function cpErrorText(e) {
+  if (e && (e.code === "ACTION_REJECTED" || e.code === 4001)) return "You cancelled in your wallet. Nothing was sent.";
+  const why = (e && (e.reason || e.shortMessage || e.message)) || "unknown error";
+  return "The contract or wallet refused: " + String(why).slice(0, 200) + ". Nothing was retried. Check the light in step 1 before trying again.";
+}
+
+async function cpReadStatus() {
+  if (!window.ethers) throw new Error("wallet library not loaded");
+  const provider = new ethers.JsonRpcProvider(CP.rpc, CP.chainId, { staticNetwork: true });
+  const c = new ethers.Contract(CP.address, CP.abi, provider);
+  const [corePaused, nextRound, roundSettled] = await c.checkpointStatus();
+  return { corePaused, nextRound: nextRound.toString(), roundSettled, ready: !corePaused && roundSettled };
+}
+
+async function cpRefresh() {
+  try {
+    cp.status = await cpReadStatus();
+    const s = cp.status;
+    if (s.corePaused) {
+      cpSetLight("red", "Paused");
+      $("cpExplain").textContent = "The protocol is paused by its guardian right now. Nothing can be checkpointed until it is unpaused. Just wait.";
+    } else if (s.roundSettled) {
+      cpSetLight("green", "Ready");
+      $("cpExplain").textContent = "Yes. Hamster work has been settled on Ethereum and is waiting to be turned into SQK. You can continue with the next steps.";
+    } else {
+      cpSetLight("orange", "Not yet");
+      $("cpExplain").textContent = "Not yet. No settled round is waiting, so a checkpoint would do nothing useful and just cost gas. This page checks again every 30 seconds.";
+    }
+    $("cpRaw").textContent = `Raw contract answer: corePaused = ${s.corePaused}, nextRound = ${s.nextRound}, roundSettled = ${s.roundSettled}`;
+  } catch (e) {
+    cp.status = null;
+    cpSetLight("", "Unknown");
+    $("cpExplain").textContent = "Could not read the contract right now (network problem). Unknown does not mean zero. Try again in a moment.";
+    $("cpRaw").textContent = "";
+  }
+  cpUpdateButtons();
+}
+
+async function cpWalletInfo() {
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const net = await provider.getNetwork();
+  const out = $("cpWallet");
+  if (Number(net.chainId) !== CP.chainId) {
+    cp.signer = null;
+    out.innerHTML = 'Your wallet is on the wrong network. <button class="btn" id="cpSwitch" type="button" style="margin-top:0">Switch to Sepolia</button>';
+    $("cpSwitch").addEventListener("click", async () => {
+      try { await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CP.chainHex }] }); }
+      catch (e) { out.textContent = "Could not switch automatically. In MetaMask, turn on test networks and pick Sepolia."; }
+    });
+    cpUpdateButtons();
+    return;
+  }
+  cp.signer = await provider.getSigner();
+  cp.account = await cp.signer.getAddress();
+  const bal = await provider.getBalance(cp.account);
+  const eth = Number(ethers.formatEther(bal));
+  out.innerHTML = "Connected: <code>" + cp.account.slice(0, 6) + "…" + cp.account.slice(-4) + "</code> on Sepolia · balance " + eth.toFixed(4) + " test ETH." +
+    (eth === 0 ? ' <span class="note-bad">You have no test ETH, so you cannot pay the fee. Get some from a Sepolia faucet first.</span>' : "");
+  cpUpdateButtons();
+}
+
+function cpInit() {
+  $("cpConnect").addEventListener("click", async () => {
+    if (!window.ethereum) {
+      $("cpWallet").innerHTML = 'No wallet found in this browser. Install <a href="https://metamask.io" target="_blank" rel="noopener">MetaMask</a>, then reload this page.';
+      return;
+    }
+    try {
+      await window.ethereum.request({ method: "eth_requestAccounts" });
+      cp.simOk = false;
+      await cpWalletInfo();
+    } catch (e) { $("cpWallet").textContent = cpErrorText(e); }
+  });
+
+  $("cpSim").addEventListener("click", async () => {
+    cp.busy = true; cp.simOk = false; cpUpdateButtons();
+    $("cpSimOut").textContent = "Testing…";
+    try {
+      await cpRefresh();
+      if (!cp.status || !cp.status.ready) throw new Error("the light is no longer green");
+      const c = new ethers.Contract(CP.address, CP.abi, cp.signer);
+      await c.checkpoint.staticCall();
+      const gas = await c.checkpoint.estimateGas();
+      cp.simOk = true;
+      $("cpSimOut").innerHTML = '<span class="note-ok">Test passed.</span> The contract would accept your checkpoint (about ' + gas.toString() + " gas units).";
+    } catch (e) {
+      $("cpSimOut").innerHTML = '<span class="note-bad">' + cpErrorText(e).replace(/[<>&]/g, "") + "</span>";
+    }
+    cp.busy = false; cpUpdateButtons();
+  });
+
+  $("cpSend").addEventListener("click", async () => {
+    cp.busy = true; cpUpdateButtons();
+    $("cpTx").textContent = "Waiting for you to confirm in your wallet…";
+    try {
+      await cpRefresh();
+      if (!cp.status || !cp.status.ready) throw new Error("the light is no longer green, nothing was sent");
+      const c = new ethers.Contract(CP.address, CP.abi, cp.signer);
+      const tx = await c.checkpoint();
+      $("cpTx").innerHTML = 'Sent. Waiting for confirmation… <a href="https://sepolia.etherscan.io/tx/' + tx.hash + '" target="_blank" rel="noopener">view transaction</a>';
+      const receipt = await tx.wait(1);
+      $("cpTx").innerHTML = receipt && receipt.status === 1
+        ? '<span class="note-ok">Done! Your checkpoint was confirmed.</span> <a href="https://sepolia.etherscan.io/tx/' + tx.hash + '" target="_blank" rel="noopener">view transaction</a>'
+        : '<span class="note-bad">The transaction was mined but failed.</span> <a href="https://sepolia.etherscan.io/tx/' + tx.hash + '" target="_blank" rel="noopener">view transaction</a>';
+    } catch (e) {
+      $("cpTx").innerHTML = '<span class="note-bad">' + cpErrorText(e).replace(/[<>&]/g, "") + "</span>";
+    }
+    cp.simOk = false; cp.busy = false;
+    await cpRefresh();
+  });
+
+  if (window.ethereum && window.ethereum.on) {
+    const reset = () => { cp.simOk = false; cp.signer = null; $("cpSimOut").textContent = ""; $("cpWallet").textContent = "Wallet changed. Click Connect wallet again."; cpUpdateButtons(); };
+    window.ethereum.on("accountsChanged", reset);
+    window.ethereum.on("chainChanged", reset);
+  }
+  cpRefresh();
+  setInterval(cpRefresh, 30000);
+}
+window.addEventListener("load", cpInit);
 
 load();
 setInterval(load, POLL_MS);
