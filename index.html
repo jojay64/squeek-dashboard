@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Squeek Wheel · Tableau de bord</title>
+<style>
+:root{--bg:#0f0f13;--card:#17171f;--line:#2a2a36;--text:#eeeef3;--muted:#8a8aa0;--accent:#d4a84b;--accent2:#60a5fa;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px;min-height:100vh}
+header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:24px}
+h1{font-size:22px;margin:0}
+h2{font-size:16px;margin:0 0 4px 0;font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.dot.ok{background:var(--ok)}
+.dot.warn{background:var(--warn)}
+.dot.bad{background:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.value{font-size:28px;margin-top:8px;font-variant-numeric:tabular-nums;word-break:break-word}
+.sub{font-size:13px;color:var(--muted);margin-top:6px}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:12px}
+.bar>div{height:100%;background:var(--accent);width:0;transition:width .6s}
+.wide{grid-column:1/-1}
+.banner{display:none;margin-bottom:16px;padding:12px 16px;border-radius:10px;background:#3a1d1d;color:#fecaca;border:1px solid #7f1d1d}
+.chart{width:100%;height:auto;margin-top:12px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+.swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle}
+footer{margin-top:24px;font-size:12px;color:var(--muted);line-height:1.6}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Squeek Wheel</h1>
+    <div class="sub">Données publiques · Sepolia (testnet)</div>
+  </div>
+  <div class="pill"><span class="dot" id="dot"></span><span id="state">Chargement…</span></div>
+</header>
+
+<div class="banner" id="banner"></div>
+
+<div class="grid">
+  <div class="card">
+    <div class="label">Vitesse</div>
+    <div class="value" id="speed">—</div>
+    <div class="sub" id="rpm">—</div>
+  </div>
+  <div class="card">
+    <div class="label">Travail cumulé</div>
+    <div class="value" id="work">—</div>
+    <div class="sub">Unités de travail, compteur en cours</div>
+  </div>
+  <div class="card wide">
+    <div class="label">Bloc Squeek réglé</div>
+    <div class="value" id="height">—</div>
+    <div class="bar"><div id="progress"></div></div>
+    <div class="sub" id="progressText">—</div>
+  </div>
+  <div class="card">
+    <div class="label">Règlement</div>
+    <div class="value" id="queue">—</div>
+    <div class="sub" id="queueSub">—</div>
+  </div>
+  <div class="card">
+    <div class="label">Oracle</div>
+    <div class="value" id="oracle">—</div>
+    <div class="sub" id="oracleSub">—</div>
+  </div>
+  <div class="card wide">
+    <div class="label">Projection optimiste</div>
+    <div class="value" id="projected">—</div>
+    <div class="sub">Blocs qui seraient réglés si toute la file est confirmée. Ils ne sont pas encore réglés sur Ethereum.</div>
+  </div>
+</div>
+
+<div class="grid" style="margin-top:16px">
+  <div class="card wide">
+    <h2>Activité des 7 derniers jours</h2>
+    <div class="sub">Travail observé par jour (jour UTC, de 12 h à 12 h UTC)</div>
+    <svg class="chart" id="dailyChart" viewBox="0 0 640 240" role="img" aria-label="Travail observé par jour"></svg>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--accent)"></span>Travail observé</span>
+      <span><span class="swatch" style="background:var(--line)"></span>Jour partiel (couverture incomplète)</span>
+    </div>
+  </div>
+  <div class="card wide">
+    <h2>Profil typique de la journée</h2>
+    <div class="sub">Travail moyen par tranche de 30 minutes, UTC, sur la fenêtre de 7 jours</div>
+    <svg class="chart" id="dayChart" viewBox="0 0 640 240" role="img" aria-label="Profil typique de la journée"></svg>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--accent2)"></span>Travail total par tranche</span>
+    </div>
+  </div>
+  <div class="card wide">
+    <div class="sub" id="statsNote">Chargement des statistiques…</div>
+  </div>
+</div>
+
+<footer>
+  Mise à jour toutes les 15 s (statut) et 60 s (activité) · <span id="updated">—</span><br>
+  « Inconnu » signifie que la donnée n'est pas disponible, ce n'est pas une valeur nulle.<br>
+  Sources : api.squeekchain.com/v1/status et /v1/measurement/stats?range=7d
+</footer>
+
+<script>
+const STATUS_API = "https://api.squeekchain.com/v1/status";
+const STATS_API = "https://api.squeekchain.com/v1/measurement/stats?range=7d";
+const POLL_MS = 15000;
+const STATS_POLL_MS = 60000;
+const NS = "http://www.w3.org/2000/svg";
+
+const $ = (id) => document.getElementById(id);
+const UNKNOWN = "inconnu";
+
+const QUEUE_LABELS = {
+  disabled: "Désactivé", empty: "Vide", ready: "Prêt", preparing: "Préparation",
+  submitted: "Envoyé", retrying: "Nouvel essai", blocked: "Bloqué", stale: "Périmé"
+};
+const ORACLE_LABELS = {
+  accepted: "Accepté", stale: "Périmé", blocked: "Bloqué", unavailable: "Indisponible"
+};
+
+function fmtBig(value) {
+  try { return BigInt(value).toLocaleString("fr-FR"); } catch { return UNKNOWN; }
+}
+function pctOfBlock(value) {
+  // blockProgress is a decimal string out of 1,000,000,000 block units.
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(100, (n / 1e9) * 100));
+}
+function kmh(mmPerSecond) {
+  const n = Number(mmPerSecond);
+  if (!Number.isFinite(n)) return UNKNOWN;
+  return (n * 3.6 / 1000).toFixed(2) + " km/h";
+}
+function setDot(kind) { $("dot").className = "dot " + kind; }
+
+function renderMeasurement(d) {
+  const m = d.measurement;
+  if (!m) {
+    $("state").textContent = "Pas encore de mesure";
+    setDot("warn");
+    $("speed").textContent = UNKNOWN;
+    $("rpm").textContent = "";
+    $("work").textContent = UNKNOWN;
+    return;
+  }
+  const online = m.freshness === "online";
+  const active = m.coreStatus === "ACTIVE";
+  if (m.coreStatus === "COUNTER_FAULT") {
+    $("state").textContent = "Défaut du compteur";
+    setDot("bad");
+  } else if (online && active) {
+    $("state").textContent = "En rotation";
+    setDot("ok");
+  } else if (online) {
+    $("state").textContent = "À l'arrêt";
+    setDot("warn");
+  } else {
+    $("state").textContent = "Données anciennes";
+    setDot("warn");
+  }
+  $("speed").textContent = kmh(m.speedMmPerSecond);
+  $("rpm").textContent = Number.isFinite(Number(m.rpmMilli))
+    ? (Number(m.rpmMilli) / 1000).toFixed(1) + " tr/min"
+    : "";
+  $("work").textContent = fmtBig(m.cumulativeWorkUnits);
+}
+
+function renderBuilder(d) {
+  const b = d.builder;
+  const a = b && b.status === "available" ? b.anchor : null;
+  if (a) {
+    $("height").textContent = fmtBig(a.blockHeight);
+    const p = pctOfBlock(a.blockProgress);
+    $("progress").style.width = p.toFixed(1) + "%";
+    $("progressText").textContent = p.toFixed(1) + " % vers le bloc suivant";
+  } else {
+    $("height").textContent = UNKNOWN;
+    $("progress").style.width = "0%";
+    $("progressText").textContent = b && b.reason ? b.reason : "";
+  }
+
+  const p = b && b.status === "available" ? b.projected : null;
+  $("projected").textContent = p
+    ? `${fmtBig(p.blockHeight)} · ${p.completedBlockCount} blocs en attente`
+    : UNKNOWN;
+}
+
+function renderQueue(d) {
+  const q = d.settlementQueue;
+  if (!q || q.status !== "available") {
+    $("queue").textContent = UNKNOWN;
+    $("queueSub").textContent = (q && q.reason) || "";
+    return;
+  }
+  $("queue").textContent = QUEUE_LABELS[q.state] || q.state;
+  const roundCount = q.buffered ? q.buffered.roundCount : "0";
+  $("queueSub").textContent = `${roundCount} manche(s) en attente`;
+  const kind = q.state === "blocked" ? "bad" : q.state === "stale" ? "warn" : null;
+  if (kind) setDot(kind);
+}
+
+function renderOracle(d) {
+  const o = d.oracle || {};
+  $("oracle").textContent = ORACLE_LABELS[o.state] || UNKNOWN;
+  const closure = o.latestClosure;
+  $("oracleSub").textContent = o.reason
+    ? o.reason
+    : closure
+      ? `Dernière manche acceptée : ${closure.lastRound}`
+      : "";
+}
+
+function render(d) {
+  renderMeasurement(d);
+  renderBuilder(d);
+  renderQueue(d);
+  renderOracle(d);
+  $("updated").textContent = "statut mis à jour " + new Date().toLocaleTimeString("fr-FR");
+}
+
+async function load() {
+  try {
+    const res = await fetch(STATUS_API, { headers: { accept: "application/json" } });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    render(data);
+    $("banner").style.display = "none";
+  } catch (err) {
+    $("banner").textContent = "Impossible de charger les données (" + err.message + "). Nouvel essai automatique.";
+    $("banner").style.display = "block";
+    $("state").textContent = "Hors ligne";
+    setDot("bad");
+  }
+}
+
+/* ---------- Activity charts ---------- */
+
+function svgEl(tag, attrs, text) {
+  const el = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) el.setAttribute(k, String(v));
+  if (text !== undefined) el.textContent = text;
+  return el;
+}
+
+function clearSvg(svg) {
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+}
+
+function drawDaily(svg, days) {
+  clearSvg(svg);
+  const W = 640, H = 240, padL = 48, padR = 12, padT = 16, padB = 36;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const values = days.map((d) => Number(d.observedWorkUnits) || 0);
+  const max = Math.max(1, ...values);
+  const slot = innerW / Math.max(1, days.length);
+  const barW = slot * 0.6;
+
+  svg.appendChild(svgEl("line", { x1: padL, y1: H - padB, x2: W - padR, y2: H - padB, stroke: "#2a2a36" }));
+  svg.appendChild(svgEl("text", { x: padL - 8, y: padT + 4, fill: "#8a8aa0", "font-size": 11, "text-anchor": "end" }, fmtBig(String(Math.round(max)))));
+  svg.appendChild(svgEl("text", { x: padL - 8, y: H - padB, fill: "#8a8aa0", "font-size": 11, "text-anchor": "end" }, "0"));
+
+  days.forEach((d, i) => {
+    const v = values[i];
+    const h = (v / max) * innerH;
+    const x = padL + i * slot + (slot - barW) / 2;
+    const y = H - padB - h;
+    const partial = d.coverage && d.coverage.coverageBps < 10000;
+    svg.appendChild(svgEl("rect", {
+      x, y, width: barW, height: Math.max(h, 1), rx: 3,
+      fill: partial ? "#2a2a36" : "#d4a84b"
+    }));
+    svg.appendChild(svgEl("text", { x: x + barW / 2, y, dy: -4, fill: "#eeeef3", "font-size": 11, "text-anchor": "middle" }, fmtBig(String(v))));
+    svg.appendChild(svgEl("text", { x: x + barW / 2, y: H - padB + 16, fill: "#8a8aa0", "font-size": 11, "text-anchor": "middle" }, (d.date || "").slice(5)));
+  });
+}
+
+function drawTypicalDay(svg, slots) {
+  clearSvg(svg);
+  const W = 640, H = 240, padL = 48, padR = 12, padT = 16, padB = 36;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const values = slots.map((s) => Number(s.totalWorkUnits) || 0);
+  const max = Math.max(1, ...values);
+  const n = Math.max(1, slots.length - 1);
+  const pts = slots.map((s, i) => {
+    const x = padL + (i / n) * innerW;
+    const y = H - padB - (values[i] / max) * innerH;
+    return [x, y];
+  });
+
+  svg.appendChild(svgEl("line", { x1: padL, y1: H - padB, x2: W - padR, y2: H - padB, stroke: "#2a2a36" }));
+  svg.appendChild(svgEl("text", { x: padL - 8, y: padT + 4, fill: "#8a8aa0", "font-size": 11, "text-anchor": "end" }, fmtBig(String(Math.round(max)))));
+  svg.appendChild(svgEl("text", { x: padL - 8, y: H - padB, fill: "#8a8aa0", "font-size": 11, "text-anchor": "end" }, "0"));
+
+  if (pts.length > 1) {
+    const d = pts.map(([x, y], i) => (i === 0 ? "M" : "L") + x.toFixed(1) + " " + y.toFixed(1)).join(" ");
+    const area = d + ` L${pts[pts.length - 1][0].toFixed(1)} ${H - padB} L${pts[0][0].toFixed(1)} ${H - padB} Z`;
+    svg.appendChild(svgEl("path", { d: area, fill: "rgba(96,165,250,0.15)" }));
+    svg.appendChild(svgEl("path", { d, fill: "none", stroke: "#60a5fa", "stroke-width": 2 }));
+  }
+
+  [0, 6, 12, 18, 24].forEach((h) => {
+    const x = padL + ((h * 60) / (47 * 30)) * innerW;
+    const xx = h === 24 ? W - padR : x;
+    svg.appendChild(svgEl("text", { x: xx, y: H - padB + 16, fill: "#8a8aa0", "font-size": 11, "text-anchor": h === 0 ? "start" : h === 24 ? "end" : "middle" }, h + " h UTC"));
+  });
+}
+
+async function loadStats() {
+  const note = $("statsNote");
+  try {
+    const res = await fetch(STATS_API, { headers: { accept: "application/json" } });
+    if (res.status === 503) {
+      note.textContent = "Statistiques en cours de reconstruction, nouvel essai automatique.";
+      return;
+    }
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const s = await res.json();
+    const activity = s.activity;
+    if (!activity || !Array.isArray(activity.days)) {
+      note.textContent = "Activité indisponible pour le moment.";
+      return;
+    }
+    drawDaily($("dailyChart"), activity.days);
+    if (Array.isArray(activity.typicalDay)) drawTypicalDay($("dayChart"), activity.typicalDay);
+    const cov = activity.coverage ? (activity.coverage.coverageBps / 100).toFixed(1) + " % des manches observées" : "";
+    note.textContent = `Couverture de la fenêtre : ${cov}. Les barres grises sont des jours incomplets.`;
+  } catch (err) {
+    note.textContent = "Statistiques indisponibles (" + err.message + ").";
+  }
+}
+
+load();
+setInterval(load, POLL_MS);
+loadStats();
+setInterval(loadStats, STATS_POLL_MS);
+</script>
+</body>
+</html>
