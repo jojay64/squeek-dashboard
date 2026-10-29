@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Squeek Wheel · Tableau de bord</title>
+<title>Squeek Wheel · Dashboard</title>
 <style>
 :root{--bg:#0f0f13;--card:#17171f;--line:#2a2a36;--text:#eeeef3;--muted:#8a8aa0;--accent:#d4a84b;--accent2:#60a5fa;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171}
 *{box-sizing:border-box}
@@ -35,32 +35,32 @@ footer{margin-top:24px;font-size:12px;color:var(--muted);line-height:1.6}
 <header>
   <div>
     <h1>Squeek Wheel</h1>
-    <div class="sub">Données publiques · Sepolia (testnet)</div>
+    <div class="sub">Public data · Sepolia (testnet)</div>
   </div>
-  <div class="pill"><span class="dot" id="dot"></span><span id="state">Chargement…</span></div>
+  <div class="pill"><span class="dot" id="dot"></span><span id="state">Loading…</span></div>
 </header>
 
 <div class="banner" id="banner"></div>
 
 <div class="grid">
   <div class="card">
-    <div class="label">Vitesse</div>
+    <div class="label">Speed</div>
     <div class="value" id="speed">—</div>
     <div class="sub" id="rpm">—</div>
   </div>
   <div class="card">
-    <div class="label">Travail cumulé</div>
+    <div class="label">Cumulative work</div>
     <div class="value" id="work">—</div>
-    <div class="sub">Unités de travail, compteur en cours</div>
+    <div class="sub">Work units, current counter</div>
   </div>
   <div class="card wide">
-    <div class="label">Bloc Squeek réglé</div>
+    <div class="label">Settled Squeek block</div>
     <div class="value" id="height">—</div>
     <div class="bar"><div id="progress"></div></div>
     <div class="sub" id="progressText">—</div>
   </div>
   <div class="card">
-    <div class="label">Règlement</div>
+    <div class="label">Settlement</div>
     <div class="value" id="queue">—</div>
     <div class="sub" id="queueSub">—</div>
   </div>
@@ -70,39 +70,39 @@ footer{margin-top:24px;font-size:12px;color:var(--muted);line-height:1.6}
     <div class="sub" id="oracleSub">—</div>
   </div>
   <div class="card wide">
-    <div class="label">Projection optimiste</div>
+    <div class="label">Optimistic projection</div>
     <div class="value" id="projected">—</div>
-    <div class="sub">Blocs qui seraient réglés si toute la file est confirmée. Ils ne sont pas encore réglés sur Ethereum.</div>
+    <div class="sub">Blocks that would be settled if the whole queue is confirmed. They are not yet settled on Ethereum.</div>
   </div>
 </div>
 
 <div class="grid" style="margin-top:16px">
   <div class="card wide">
-    <h2>Activité des 7 derniers jours</h2>
-    <div class="sub">Travail observé par jour (jour UTC, de 12 h à 12 h UTC)</div>
-    <svg class="chart" id="dailyChart" viewBox="0 0 640 240" role="img" aria-label="Travail observé par jour"></svg>
+    <h2>Activity over the last 7 days</h2>
+    <div class="sub">Observed work per day (UTC day, 12:00 to 12:00 UTC)</div>
+    <svg class="chart" id="dailyChart" viewBox="0 0 640 240" role="img" aria-label="Observed work per day"></svg>
     <div class="legend">
-      <span><span class="swatch" style="background:var(--accent)"></span>Travail observé</span>
-      <span><span class="swatch" style="background:var(--line)"></span>Jour partiel (couverture incomplète)</span>
+      <span><span class="swatch" style="background:var(--accent)"></span>Observed work</span>
+      <span><span class="swatch" style="background:var(--line)"></span>Partial day (incomplete coverage)</span>
     </div>
   </div>
   <div class="card wide">
-    <h2>Profil typique de la journée</h2>
-    <div class="sub">Travail moyen par tranche de 30 minutes, UTC, sur la fenêtre de 7 jours</div>
-    <svg class="chart" id="dayChart" viewBox="0 0 640 240" role="img" aria-label="Profil typique de la journée"></svg>
+    <h2>Typical day profile</h2>
+    <div class="sub">Average work per 30-minute slot, UTC, over the 7-day window</div>
+    <svg class="chart" id="dayChart" viewBox="0 0 640 240" role="img" aria-label="Typical day profile"></svg>
     <div class="legend">
-      <span><span class="swatch" style="background:var(--accent2)"></span>Travail total par tranche</span>
+      <span><span class="swatch" style="background:var(--accent2)"></span>Total work per slot</span>
     </div>
   </div>
   <div class="card wide">
-    <div class="sub" id="statsNote">Chargement des statistiques…</div>
+    <div class="sub" id="statsNote">Loading statistics…</div>
   </div>
 </div>
 
 <footer>
-  Mise à jour toutes les 15 s (statut) et 60 s (activité) · <span id="updated">—</span><br>
-  « Inconnu » signifie que la donnée n'est pas disponible, ce n'est pas une valeur nulle.<br>
-  Sources : api.squeekchain.com/v1/status et /v1/measurement/stats?range=7d
+  Updated every 15 s (status) and 60 s (activity) · <span id="updated">—</span><br>
+  "Unknown" means the data is not available; it is not a zero value.<br>
+  Sources: api.squeekchain.com/v1/status and /v1/measurement/stats?range=7d
 </footer>
 
 <script>
@@ -113,18 +113,18 @@ const STATS_POLL_MS = 60000;
 const NS = "http://www.w3.org/2000/svg";
 
 const $ = (id) => document.getElementById(id);
-const UNKNOWN = "inconnu";
+const UNKNOWN = "unknown";
 
 const QUEUE_LABELS = {
-  disabled: "Désactivé", empty: "Vide", ready: "Prêt", preparing: "Préparation",
-  submitted: "Envoyé", retrying: "Nouvel essai", blocked: "Bloqué", stale: "Périmé"
+  disabled: "Disabled", empty: "Empty", ready: "Ready", preparing: "Preparing",
+  submitted: "Submitted", retrying: "Retrying", blocked: "Blocked", stale: "Stale"
 };
 const ORACLE_LABELS = {
-  accepted: "Accepté", stale: "Périmé", blocked: "Bloqué", unavailable: "Indisponible"
+  accepted: "Accepted", stale: "Stale", blocked: "Blocked", unavailable: "Unavailable"
 };
 
 function fmtBig(value) {
-  try { return BigInt(value).toLocaleString("fr-FR"); } catch { return UNKNOWN; }
+  try { return BigInt(value).toLocaleString("en-US"); } catch { return UNKNOWN; }
 }
 function pctOfBlock(value) {
   // blockProgress is a decimal string out of 1,000,000,000 block units.
@@ -142,7 +142,7 @@ function setDot(kind) { $("dot").className = "dot " + kind; }
 function renderMeasurement(d) {
   const m = d.measurement;
   if (!m) {
-    $("state").textContent = "Pas encore de mesure";
+    $("state").textContent = "No measurement yet";
     setDot("warn");
     $("speed").textContent = UNKNOWN;
     $("rpm").textContent = "";
@@ -152,21 +152,21 @@ function renderMeasurement(d) {
   const online = m.freshness === "online";
   const active = m.coreStatus === "ACTIVE";
   if (m.coreStatus === "COUNTER_FAULT") {
-    $("state").textContent = "Défaut du compteur";
+    $("state").textContent = "Counter fault";
     setDot("bad");
   } else if (online && active) {
-    $("state").textContent = "En rotation";
+    $("state").textContent = "Spinning";
     setDot("ok");
   } else if (online) {
-    $("state").textContent = "À l'arrêt";
+    $("state").textContent = "Idle";
     setDot("warn");
   } else {
-    $("state").textContent = "Données anciennes";
+    $("state").textContent = "Stale data";
     setDot("warn");
   }
   $("speed").textContent = kmh(m.speedMmPerSecond);
   $("rpm").textContent = Number.isFinite(Number(m.rpmMilli))
-    ? (Number(m.rpmMilli) / 1000).toFixed(1) + " tr/min"
+    ? (Number(m.rpmMilli) / 1000).toFixed(1) + " rpm"
     : "";
   $("work").textContent = fmtBig(m.cumulativeWorkUnits);
 }
@@ -178,7 +178,7 @@ function renderBuilder(d) {
     $("height").textContent = fmtBig(a.blockHeight);
     const p = pctOfBlock(a.blockProgress);
     $("progress").style.width = p.toFixed(1) + "%";
-    $("progressText").textContent = p.toFixed(1) + " % vers le bloc suivant";
+    $("progressText").textContent = p.toFixed(1) + " % to the next block";
   } else {
     $("height").textContent = UNKNOWN;
     $("progress").style.width = "0%";
@@ -187,7 +187,7 @@ function renderBuilder(d) {
 
   const p = b && b.status === "available" ? b.projected : null;
   $("projected").textContent = p
-    ? `${fmtBig(p.blockHeight)} · ${p.completedBlockCount} blocs en attente`
+    ? `${fmtBig(p.blockHeight)} · ${p.completedBlockCount} blocks pending`
     : UNKNOWN;
 }
 
@@ -200,7 +200,7 @@ function renderQueue(d) {
   }
   $("queue").textContent = QUEUE_LABELS[q.state] || q.state;
   const roundCount = q.buffered ? q.buffered.roundCount : "0";
-  $("queueSub").textContent = `${roundCount} manche(s) en attente`;
+  $("queueSub").textContent = `${roundCount} round(s) pending`;
   const kind = q.state === "blocked" ? "bad" : q.state === "stale" ? "warn" : null;
   if (kind) setDot(kind);
 }
@@ -212,7 +212,7 @@ function renderOracle(d) {
   $("oracleSub").textContent = o.reason
     ? o.reason
     : closure
-      ? `Dernière manche acceptée : ${closure.lastRound}`
+      ? `Last accepted round: ${closure.lastRound}`
       : "";
 }
 
@@ -221,7 +221,7 @@ function render(d) {
   renderBuilder(d);
   renderQueue(d);
   renderOracle(d);
-  $("updated").textContent = "statut mis à jour " + new Date().toLocaleTimeString("fr-FR");
+  $("updated").textContent = "status updated " + new Date().toLocaleTimeString("en-US");
 }
 
 async function load() {
@@ -232,9 +232,9 @@ async function load() {
     render(data);
     $("banner").style.display = "none";
   } catch (err) {
-    $("banner").textContent = "Impossible de charger les données (" + err.message + "). Nouvel essai automatique.";
+    $("banner").textContent = "Unable to load data (" + err.message + "). Retrying automatically.";
     $("banner").style.display = "block";
-    $("state").textContent = "Hors ligne";
+    $("state").textContent = "Offline";
     setDot("bad");
   }
 }
@@ -316,22 +316,22 @@ async function loadStats() {
   try {
     const res = await fetch(STATS_API, { headers: { accept: "application/json" } });
     if (res.status === 503) {
-      note.textContent = "Statistiques en cours de reconstruction, nouvel essai automatique.";
+      note.textContent = "Statistics are being rebuilt, retrying automatically.";
       return;
     }
     if (!res.ok) throw new Error("HTTP " + res.status);
     const s = await res.json();
     const activity = s.activity;
     if (!activity || !Array.isArray(activity.days)) {
-      note.textContent = "Activité indisponible pour le moment.";
+      note.textContent = "Activity is currently unavailable.";
       return;
     }
     drawDaily($("dailyChart"), activity.days);
     if (Array.isArray(activity.typicalDay)) drawTypicalDay($("dayChart"), activity.typicalDay);
-    const cov = activity.coverage ? (activity.coverage.coverageBps / 100).toFixed(1) + " % des manches observées" : "";
-    note.textContent = `Couverture de la fenêtre : ${cov}. Les barres grises sont des jours incomplets.`;
+    const cov = activity.coverage ? (activity.coverage.coverageBps / 100).toFixed(1) + " % of rounds observed" : "";
+    note.textContent = `Window coverage: ${cov}. Grey bars are incomplete days.`;
   } catch (err) {
-    note.textContent = "Statistiques indisponibles (" + err.message + ").";
+    note.textContent = "Statistics unavailable (" + err.message + ").";
   }
 }
 
