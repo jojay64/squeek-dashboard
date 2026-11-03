@@ -76,7 +76,14 @@ const esc = (s) => String(s).replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&g
 const KEY = "squeekTesterSent";
 let ctx = null; // { signer, address }
 
-const err = (e) => (e && (e.shortMessage || e.reason || e.message)) || String(e);
+const err = (e) => {
+  if (!e) return "Unknown error";
+  const inner = e.info && e.info.error ? e.info.error : (e.error || e);
+  if (inner.code === -32002) return "A request is already pending in your wallet. Open the wallet, answer it, then reload this page.";
+  if (inner.code === 4001 || e.code === "ACTION_REJECTED") return "You rejected the request in your wallet.";
+  const msg = inner.message || e.shortMessage || e.reason || e.message || String(e);
+  return /coalesce/i.test(msg) ? "Your wallet returned an error this page cannot read. Unlock the wallet, close any open wallet popup, disable other wallet extensions, then reload." : msg;
+};
 const done = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
 
 async function init() {
@@ -96,8 +103,8 @@ $("connect").addEventListener("click", async () => {
   const out = $("walletOut");
   try {
     if (!window.ethereum) { out.innerHTML = '<span class="bad">No wallet found. Install MetaMask or Rabby, then reload.</span>'; return; }
+    await window.ethereum.request({ method: "eth_requestAccounts" });
     const provider = new ethers.BrowserProvider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
     const net = await provider.getNetwork();
     if (Number(net.chainId) !== T.chainId) {
       out.innerHTML = 'Your wallet is on the wrong network. <button class="btn" id="switch" type="button" style="margin-top:0">Switch to Sepolia</button>';
