@@ -75,6 +75,7 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[c]));
 const KEY = "squeekTesterSent";
 let ctx = null; // { signer, address }
+const reader = () => new ethers.JsonRpcProvider(T.rpc, T.chainId, { staticNetwork: true }); // reads never go through the wallet
 
 const err = (e) => {
   if (!e) return "Unknown error";
@@ -116,7 +117,7 @@ $("connect").addEventListener("click", async () => {
     }
     const signer = await provider.getSigner();
     const address = await signer.getAddress();
-    const bal = await provider.getBalance(address);
+    const bal = await reader().getBalance(address);
     ctx = { signer, address };
     const eth = Number(ethers.formatEther(bal));
     out.innerHTML = `Connected: <code>${address}</code><br>Network: Sepolia · Balance: ${eth.toFixed(4)} ETH` +
@@ -129,9 +130,9 @@ $("sim").addEventListener("click", async () => {
   const out = $("simOut");
   out.textContent = "Checking…";
   try {
-    const c = new ethers.Contract(T.token, T.abi, ctx.signer);
-    const ok = await c.approve.staticCall(ctx.address, 0n);
-    const gas = await c.approve.estimateGas(ctx.address, 0n);
+    const c = new ethers.Contract(T.token, T.abi, reader());
+    const ok = await c.approve.staticCall(ctx.address, 0n, { from: ctx.address });
+    const gas = await c.approve.estimateGas(ctx.address, 0n, { from: ctx.address });
     if (ok !== true) throw new Error("The contract did not return true");
     out.innerHTML = `<span class="ok">The check passed.</span> Estimated gas: ${gas.toString()} units (a tiny fee on Sepolia). Nothing was sent.`;
     $("send").disabled = !!done();
