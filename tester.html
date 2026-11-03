@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Squeek Tester</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js" integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM" crossorigin="anonymous" defer></script>
+<style>
+:root{--bg:#d3d3dc;--card:#f6f6f9;--line:#e1e1ea;--text:#1b1b22;--muted:#6b6b80;--amber:#d18a00;--blue:#4a63d8;--green:#3f8f5a;--bad:#c0392b;
+--mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;--display:"Barlow Condensed","Arial Narrow",Impact,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14px;padding:20px;max-width:760px;margin-inline:auto}
+h1{font-family:var(--display);font-size:44px;line-height:.95;margin:0;text-transform:uppercase}
+h1 span{color:var(--blue)}
+.sub{font-size:12px;color:var(--muted);margin:8px 0 18px;text-transform:uppercase;letter-spacing:.08em;line-height:1.5}
+.card{background:var(--card) radial-gradient(#dcdce5 1px,transparent 1.2px) 0 0/12px 12px;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+.label{display:flex;align-items:center;gap:10px;font-size:12px;text-transform:uppercase;letter-spacing:.16em}
+.label::before{content:"";width:12px;height:12px;background:var(--green);flex:none}
+.plain{font-size:13px;line-height:1.65;color:#33333f;margin:8px 0 0;word-break:break-word}
+.btn{display:inline-block;margin-top:12px;padding:11px 16px;background:var(--amber);color:#fff;border:0;border-radius:4px;font:inherit;font-size:12px;text-transform:uppercase;letter-spacing:.16em;cursor:pointer}
+.btn:hover{background:#b97a00}.btn:disabled{background:#b9b9c8;cursor:not-allowed}
+code{background:#fff;border:1px solid var(--line);padding:1px 5px;font-size:12px}
+.ok{color:var(--green)}.bad{color:var(--bad)}
+a{color:var(--blue)}
+footer{margin-top:18px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#55556a;line-height:1.8}
+</style>
+</head>
+<body>
+<h1>Squeek Tester <span>one safe test</span></h1>
+<div class="sub">Unofficial · Sepolia (testnet) · you sign, nothing is automatic</div>
+
+<div class="card">
+  <div class="label">What this does</div>
+  <p class="plain">Sends <b>one</b> test transaction to the official SQK token on Sepolia: <code>approve(your own address, 0)</code>. The amount is zero and the spender is you, so no funds move and nothing can be spent. It only costs a tiny amount of testnet gas (free test ETH from a faucet).</p>
+  <p class="plain" id="tokenInfo">Reading the contract…</p>
+</div>
+
+<div class="card">
+  <div class="label">1 · Connect your wallet</div>
+  <button class="btn" id="connect" type="button">Connect wallet</button>
+  <p class="plain" id="walletOut"></p>
+</div>
+
+<div class="card">
+  <div class="label">2 · Free check (nothing is sent)</div>
+  <button class="btn" id="sim" type="button" disabled>Run the free check</button>
+  <p class="plain" id="simOut"></p>
+</div>
+
+<div class="card">
+  <div class="label">3 · Send the test transaction (once)</div>
+  <button class="btn" id="send" type="button" disabled>Send approve(you, 0)</button>
+  <p class="plain" id="txOut"></p>
+</div>
+
+<footer>
+  Official addresses come from <a href="https://docs.squeekchain.com/assets/deployments/sepolia.json" target="_blank" rel="noopener">the official deployment record</a>. This page never asks for a key or a seed phrase and never sends anything without your wallet confirmation. One transaction is enough: it does not retry, and it will not let you send twice from this browser.
+</footer>
+
+<script>
+const T = {
+  chainId: 11155111,
+  chainHex: "0xaa36a7",
+  rpc: "https://ethereum-sepolia-rpc.publicnode.com",
+  token: "0x6872bfa5ccc3e9e440c6c16e5ffdabb8dba4cc76", // SqueekToken, official sepolia.json
+  abi: [
+    "function approve(address spender, uint256 amount) returns (bool)",
+    "function symbol() view returns (string)",
+  ],
+};
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[c]));
+const KEY = "squeekTesterSent";
+let ctx = null; // { signer, address }
+
+const err = (e) => (e && (e.shortMessage || e.reason || e.message)) || String(e);
+const done = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
+
+async function init() {
+  const out = $("tokenInfo");
+  try {
+    if (!window.ethers) throw new Error("wallet library not loaded");
+    const p = new ethers.JsonRpcProvider(T.rpc, T.chainId, { staticNetwork: true });
+    const c = new ethers.Contract(T.token, T.abi, p);
+    const sym = await c.symbol();
+    out.innerHTML = `Contract: <code>${T.token}</code> (symbol read from chain: <b>${esc(sym)}</b>). Check it matches the <a href="https://docs.squeekchain.com/assets/deployments/sepolia.json" target="_blank" rel="noopener">official record</a> (SqueekToken).`;
+  } catch (e) { out.innerHTML = `<span class="bad">${esc(err(e))}</span>`; }
+  const prev = done();
+  if (prev) $("txOut").innerHTML = `A transaction was already sent from this browser: <a href="https://sepolia.etherscan.io/tx/${esc(prev)}" target="_blank" rel="noopener">view it</a>. One is enough.`;
+}
+
+$("connect").addEventListener("click", async () => {
+  const out = $("walletOut");
+  try {
+    if (!window.ethereum) { out.innerHTML = '<span class="bad">No wallet found. Install MetaMask or Rabby, then reload.</span>'; return; }
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const net = await provider.getNetwork();
+    if (Number(net.chainId) !== T.chainId) {
+      out.innerHTML = 'Your wallet is on the wrong network. <button class="btn" id="switch" type="button" style="margin-top:0">Switch to Sepolia</button>';
+      $("switch").onclick = async () => {
+        try { await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: T.chainHex }] }); $("connect").click(); }
+        catch (e) { out.innerHTML = `<span class="bad">${esc(err(e))}</span>`; }
+      };
+      return;
+    }
+    const signer = await provider.getSigner();
+    const address = await signer.getAddress();
+    const bal = await provider.getBalance(address);
+    ctx = { signer, address };
+    const eth = Number(ethers.formatEther(bal));
+    out.innerHTML = `Connected: <code>${address}</code><br>Network: Sepolia · Balance: ${eth.toFixed(4)} ETH` +
+      (eth === 0 ? '<br><span class="bad">You need a little test ETH for gas: use a Sepolia faucet.</span>' : '<br><span class="ok">Ready.</span>');
+    $("sim").disabled = false;
+  } catch (e) { out.innerHTML = `<span class="bad">${esc(err(e))}</span>`; }
+});
+
+$("sim").addEventListener("click", async () => {
+  const out = $("simOut");
+  out.textContent = "Checking…";
+  try {
+    const c = new ethers.Contract(T.token, T.abi, ctx.signer);
+    const ok = await c.approve.staticCall(ctx.address, 0n);
+    const gas = await c.approve.estimateGas(ctx.address, 0n);
+    if (ok !== true) throw new Error("The contract did not return true");
+    out.innerHTML = `<span class="ok">The check passed.</span> Estimated gas: ${gas.toString()} units (a tiny fee on Sepolia). Nothing was sent.`;
+    $("send").disabled = !!done();
+  } catch (e) { out.innerHTML = `<span class="bad">${esc(err(e))}</span><br>Nothing was sent. Do not retry blindly.`; }
+});
+
+$("send").addEventListener("click", async () => {
+  const out = $("txOut");
+  $("send").disabled = true; // never allow a second click
+  try {
+    const c = new ethers.Contract(T.token, T.abi, ctx.signer);
+    const tx = await c.approve(ctx.address, 0n);
+    try { localStorage.setItem(KEY, tx.hash); } catch {}
+    out.innerHTML = `Sent. Waiting for confirmation… <a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank" rel="noopener">view transaction</a>`;
+    const r = await tx.wait();
+    out.innerHTML = (r && r.status === 1
+      ? '<span class="ok">Done! The transaction was confirmed.</span>'
+      : '<span class="bad">The transaction was mined but failed.</span>') +
+      ` <a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank" rel="noopener">view transaction</a><br>The badge can take a while to show up on your Genesis profile.`;
+  } catch (e) { out.innerHTML = `<span class="bad">${esc(err(e))}</span><br>If you rejected it, reload the page to try again.`; }
+});
+
+window.addEventListener("load", init);
+</script>
+</body>
+</html>
