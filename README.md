@@ -28,7 +28,7 @@ Read-only, public endpoints:
 
 ## Checkpoint helper: safety notes
 
-- It talks only to the SqueekMining proxy `0x3beE588fC20dE788Bac17d33b41Da7346cb27EC4` on Sepolia (chain ID `11155111`), copied from the [official deployment record](https://docs.squeekchain.com/assets/deployments/sepolia.json). Verify it before signing.
+- It talks only to the SqueekMining proxy `0x2dccb11fcc2defdd188555e45acb52231e82e218` on Sepolia (chain ID `11155111`), copied from the [official deployment record](https://docs.squeekchain.com/assets/deployments/sepolia.json). Verify it before signing.
 - The only write function is `checkpoint()`, which takes no input and is permissionless.
 - The page never asks for, stores or sees a private key or seed phrase. Your wallet signs.
 - It re-reads `checkpointStatus()` before testing and before sending, simulates the call first, and never retries automatically.
